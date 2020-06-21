@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 注意：此时的命名空间必须是对应的映射接口（必须是对应接口的全路径） -->
+<mapper namespace="com.yc.springblog.mapper.IUserMapper">
+	
+	<!-- 用户登录 -->
+	<select id="login" parameterType="map" resultType="User">
+		select * from user where email = #{email} and password = #{password}
+	</select>
+	
+	<!-- 添加评论 -->
+	<insert id="addComment" parameterType="map">
+		insert into comments values(null, #{uid}, #{cid}, (select name from user where id = #{uid}), #{content}, default, #{date}, default)
+	</insert>
+	<!-- 博客评论数加一 -->
+	<update id="Updatecontent" parameterType="int">
+		update contents set comment = comment + 1 where id = #{parameter}
+	</update>
+	
+	<!-- 添加回复 -->
+	<insert id="addReply" parameterType="map">
+		insert into reply values(null, #{cid}, #{comment_id}, #{to_uid}, #{from_uid}, (select name from user where id = #{to_uid}), 
+		(select name from user where id = #{from_uid}), #{date}, #{content}, default, default)
+	</insert>
+	<!-- 评论回复数加一 -->
+	<update id="commentUpdate" parameterType="int">
+		update comments set reply_count = reply_count + 1 where id = #{parameter}
+	</update>
+	
+	<!-- 点赞 -->
+	<update id="addStar" parameterType="map">
+		<choose>
+			<!-- 博客点赞 -->
+			<when test="type == 1">
+				update contents set star = star + 1 where id = #{id}
+			</when>
+			<!-- 评论点赞 -->
+			<when test="type == 2">
+				update comments set star = star + 1 where id = #{id}
+			</when>
+			<!-- 回复点赞 -->
+			<otherwise>
+				update reply set star = star + 1 where id = #{id}
+			</otherwise>
+		</choose>
+	</update>
+	<insert id="insertStar" parameterType="map">
+		insert into great values(null, #{cid}, #{uid}, #{type_id}, #{type}, #{date}, default)
+	</insert>
+	
+	<!-- 取消赞 -->
+	<update id="subtractStar" parameterType="map">
+		<choose>
+			<!-- 博客取消赞 -->
+			<when test="type == 1">
+				update contents set star = star - 1 where id = #{id}
+			</when>
+			<!-- 评论取消赞 -->
+			<when test="type == 2">
+				update comments set star = star - 1 where id = #{id}
+			</when>
+			<!-- 回复取消赞 -->
+			<otherwise>
+				update reply set star = star - 1 where id = #{id}
+			</otherwise>
+		</choose>
+	</update>
+	<insert id="deleteStar" parameterType="map">
+		delete from great where uid = #{uid} and type_id = #{type_id} and type = #{type}
+	</insert>
+	
+	<!-- 用户注册 -->
+	<insert id="register" parameterType="map">
+		insert into user values(null, #{name}, default, #{email}, #{password}, #{telephone})
+	</insert>
+	
+	<!-- 博客访问数加1 -->
+	<update id="addView" parameterType="int">
+		update contents set view = view + 1 where id = #{parameter}
+	</update>
+	
+	<!-- 提交反馈 -->
+	<insert id="submitAdvise" parameterType="map">
+		insert into contact values(null, #{uid}, (select name from user where id = #{uid}), #{title}, #{content}, #{date}, default)
+	</insert>
+	
+	<!-- 获取用户回复 -->
+	<select id="getReply" resultType="Message" parameterType="int">
+		select r.id,r.cid,from_uname uname,r.date,(select c.title from contents c where id = r.cid) content_title,r.status from reply r where r.to_uid = #{parameter} order by r.date desc
+	</select>
+	<!-- 获取用户点赞 -->
+	<select id="getGreat" resultType="Message" parameterType="int">
+		select * from (
+		select g.id,g.cid,g.type,g.date,g.status,(select name from user where id = g.uid) uname,
+		(select title from contents where id = g.cid) content_title from great g inner join comments c 
+		on g.type_id = c.id where type = 2 and c.uid = #{parameter}
+		union
+		select g.id,g.cid,g.type,g.date,g.status,(select name from user where id = g.uid) uname,
+		(select title from contents where id = g.cid) content_title from great g inner join reply r 
+		on g.type_id = r.id where g.type = 3 and r.from_uid = #{parameter}
+		) message order by date desc
+	</select>
+	<!-- 修改消息为已读 -->
+	<update id="updateMessage" parameterType="map">
+		<!-- 修改回复 -->
+		<if test="type == 1">
+			update reply set status = 1 where id = #{id}
+		</if>
+		<!-- 修改点赞 -->
+		<if test="type == 2">
+			update great set status = 1 where id = #{id}
+		</if>
+	</update>
+	
+	<!-- 获取系统通知 -->
+	<select id="getSys_notice" resultType="Message">
+		select content,date,status from sys_notice order by date desc
+	</select>
+	
+</mapper>

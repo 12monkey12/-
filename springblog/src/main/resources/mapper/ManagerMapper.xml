@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 注意：此时的命名空间必须是对应的映射接口（必须是对应接口的全路径） -->
+<mapper namespace="com.yc.springblog.mapper.IManagerMapper">
+	
+	<!-- 登录 -->
+	<select id="login" resultType="Admin" parameterType="map">
+		select * from admin where count = #{count} and password = #{password}
+	</select>
+	
+	<!-- 删除博客 -->
+	<delete id="deleteBlog" parameterType="int">
+		delete from contents where id = #{parameter}
+	</delete>
+	<!-- 删除博客下所有评论 -->
+	<delete id="deleteCommentByCid" parameterType="int">
+		delete from comments where cid = #{parameter}
+	</delete>
+	<!-- 删除博客下所有回复 -->
+	<delete id="deleteReplyByCid" parameterType="int">
+		delete from reply where cid = #{parameter}
+	</delete>
+	<!-- 删除博客下所有点赞信息 -->
+	<delete id="deleteGreatByCid" parameterType="int">
+		delete from great where cid = #{parameter}
+	</delete>
+	
+	<!-- 添加博客 -->
+	<insert id="insertBlog" parameterType="map">
+		insert into contents values(null, #{aid}, (select department from admin where id = #{aid}), #{title}, #{content}, #{date}, #{pic}, default, default, default)
+	</insert>
+	
+	<!-- 根据建议号获取建议信息 -->
+	<select id="getContactById" parameterType="int" resultType="Contact">
+		select * from contact where id = #{parameter}
+	</select>
+	
+	<!-- 系统通知 -->
+	<insert id="insertSys_notice" parameterType="map">
+		insert into sys_notice values(null, #{content}, #{date}, default)
+	</insert>
+	
+	<!-- 修改反馈为已读 -->
+	<update id="updateContact" parameterType="int">
+		update contact set status = 1 where id = #{parameter}
+	</update>
+	
+</mapper>

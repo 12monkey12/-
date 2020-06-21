@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 注意：此时的命名空间必须是对应的映射接口（必须是对应接口的全路径） -->
+<mapper namespace="com.yc.springblog.mapper.IContentMapper">
+	
+	<!-- 得到所有博客 -->
+	<select id="getAllContent" resultType="Contents">
+		select * from contents
+	</select>
+	
+	<resultMap id="contentandadmin" type="Contents" autoMapping="true">
+		<id property="id" column="id"></id>
+		
+		<association property="admin" javaType="Admin" autoMapping="true">
+			<id property="id" column="id"></id>
+		</association>
+	</resultMap>
+	
+	<!-- 获取指定数量的博客按条件排序 分页 -->
+	<select id="getContentByC" resultType="Contents" parameterType="map">
+		<bind name="offset" value="(page - 1)*count"/>
+		select * from contents 
+		
+		<if test="condition == 'time'">
+			order by date desc
+		</if>
+		<if test="condition == 'star'">
+			order by star desc
+		</if>
+		
+		 limit #{offset}, #{count}
+	</select>
+	
+	<!-- 获取指定管理员的博客 分类-->
+	<select id="getContentByAid" resultType="Contents" parameterType="int">
+		select * from contents where aid = #{_parameter} order by id
+	</select>
+	
+	<!-- 获取指定管理员指定数量的博客 分页 -->
+	<select id="getContentByAC" resultType="Contents" parameterType="map">
+		<bind name="offset" value="(page - 1)*count"/>
+		select * from contents where aid = #{aid} order by id limit #{offset}, #{count}
+	</select>
+	
+	<!-- 博客分页,根据页数获取博客内容 -->
+	<select id="getContentByPage" resultType="Contents" parameterType="map">
+		<bind name="offset" value="(page - 1)*count"/>
+	
+		select * from contents
+		<if test="aid > 0">
+			and a.id=#{aid} 
+		</if>
+		 limit #{offset}, #{count}
+	</select>
+	
+	<!-- 得到所有建议 -->
+	<select id="getAllAdvise" resultType="Contact">
+		select * from contact order by date
+	</select>
+	
+	<!-- 得到所有用户 -->
+	<select id="getAllUser" resultType="User">
+		select * from user order by id
+	</select>
+	
+	<!-- 得到博客的评论和回复 -->
+	<select id="getCommentAndReply" resultMap="commentandreply" parameterType="map">
+		<if test="uid == null">
+		select m.*,r.id r_id,r.cid r_cid,r.comment_id,r.to_uid,r.from_uid,r.to_uname,r.from_uname,r.date r_date,r.content r_content,r.star r_star,r.status
+		from comments m left join reply r on m.id = r.comment_id where m.cid = #{cid}
+		</if>
+		<if test="uid != null">
+		select m.*,r.id r_id,r.cid r_cid,r.comment_id,r.to_uid,r.from_uid,r.to_uname,r.from_uname,r.date r_date,r.content r_content,r.star r_star,r.status,r.guid r_guid
+		from (select *,(select uid from great where type = 2 and type_id = m.id and uid = #{uid}) guid from comments m) m 
+		left join (select *,(select uid from great where type = 3 and type_id = r.id and uid = #{uid}) guid from reply r) r 
+		on m.id = r.comment_id where m.cid = #{cid}
+		</if>
+	</select>
+	<resultMap type="Comments" id="commentandreply" autoMapping="true">
+		<id property="id" column="id" />
+		
+		<collection property="replies" javaType="list" ofType="Reply" autoMapping="true">
+			<id property="id" column="r_id"/>
+			<result property="cid" column="r_cid"/>
+			<result property="date" column="r_date"/>
+			<result property="content" column="r_content"/>
+			<result property="star" column="r_star"/>
+			<result property="guid" column="r_guid"/>
+		</collection>
+	</resultMap> 
+	
+	<!-- 根据博客编号查询博客 -->
+	<select id="getContentById" resultType="Contents" parameterType="map">
+		<if test="uid == null">
+			select * from contents where id = #{id}
+		</if>
+		<if test="uid != null">
+			select c.*,(select uid from great where type_id = #{id} and type = 1 and uid = #{uid}) uid 
+			from contents c where c.id = #{id}
+		</if>
+			 
+	</select>
+	
+	<!-- 获取所有管理员信息 -->
+	<select id="getAdmin" resultType="Admin">
+		select * from admin order by id
+	</select>
+	
+</mapper>
